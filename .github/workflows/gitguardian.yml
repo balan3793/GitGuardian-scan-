@@ -23,14 +23,14 @@ jobs:
         continue-on-error: true
         run: ggshield secret scan repo .
         env:
-          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+          GITGUARDIAN_API_KEY: ${{ secrets.NEW_TOKEN }}
 
       # 📄 JSON report (never fails)
       - name: Generate GitGuardian JSON report
         if: always()
         run: ggshield secret scan repo . --json --exit-zero > ggshield-report.json
         env:
-          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+          GITGUARDIAN_API_KEY: ${{ secrets.NEW_TOKEN }}
 
       # 📦 Upload artifact
       - name: Upload GitGuardian report artifact
