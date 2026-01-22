@@ -18,4 +18,15 @@ jobs:
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         with:
-          args: scan repo .
+          args: secret scan repo .
+
+      - name: Run GitGuardian scan with JSON output
+        run: ggshield secret scan repo . --json > ggshield-report.json
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+      - name: Upload GitGuardian report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitguardian-report
+          path: ggshield-report.json
