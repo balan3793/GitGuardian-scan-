@@ -20,7 +20,7 @@ jobs:
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         with:
-          args: scan repo .
+          args: secret scan repo .
 
       # Step 3: Run GitGuardian scan with JSON output
       - name: Run GitGuardian scan with JSON output
