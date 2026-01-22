@@ -16,7 +16,7 @@ jobs:
       - name: Install GitGuardian CLI
         run: python3 -m pip install ggshield --break-system-packages
 
-      # Run GitGuardian scan (do NOT stop pipeline here)
+      # 1️⃣ Detection step (controls security gate)
       - name: Run GitGuardian scan
         id: gg_scan
         continue-on-error: true
@@ -24,14 +24,14 @@ jobs:
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # Generate JSON report ALWAYS
+      # 2️⃣ JSON report (never fail)
       - name: Generate JSON report
         if: always()
-        run: ggshield secret scan repo . --json > ggshield-report.json
+        run: ggshield secret scan repo . --json --exit-zero > ggshield-report.json
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # Upload report ALWAYS
+      # 3️⃣ Upload report
       - name: Upload GitGuardian report
         if: always()
         uses: actions/upload-artifact@v4
@@ -39,7 +39,7 @@ jobs:
           name: gitguardian-report
           path: ggshield-report.json
 
-      # Fail job if secrets were detected
+      # 4️⃣ Enforce failure at the END
       - name: Fail pipeline if secrets found
         if: steps.gg_scan.outcome == 'failure'
         run: exit 1
