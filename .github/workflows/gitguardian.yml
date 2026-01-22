@@ -10,27 +10,26 @@ jobs:
   secrets-scan:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Install ggshield CLI
+      # Install ggshield CLI correctly
       - name: Install GitGuardian CLI
-        run: pip install ggshield
+        run: python3 -m pip install ggshield --break-system-packages
 
-      # Step 3: Run GitGuardian scan (fails job if secrets found)
+      # Run GitGuardian scan (fails job if secrets found)
       - name: Run GitGuardian scan
         run: ggshield secret scan repo .
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # Step 4: Generate JSON report
+      # Generate JSON report
       - name: Generate JSON report
         run: ggshield secret scan repo . --json > ggshield-report.json
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # Step 5: Upload JSON report as artifact
+      # Upload JSON report as artifact
       - name: Upload GitGuardian report
         uses: actions/upload-artifact@v4
         with:
