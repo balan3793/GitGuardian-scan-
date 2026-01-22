@@ -13,25 +13,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Install ggshield CLI correctly
       - name: Install GitGuardian CLI
         run: python3 -m pip install ggshield --break-system-packages
 
-      # Run GitGuardian scan (fails job if secrets found)
+      # Run GitGuardian scan (do NOT stop pipeline here)
       - name: Run GitGuardian scan
+        id: gg_scan
+        continue-on-error: true
         run: ggshield secret scan repo .
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # Generate JSON report
+      # Generate JSON report ALWAYS
       - name: Generate JSON report
+        if: always()
         run: ggshield secret scan repo . --json > ggshield-report.json
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # Upload JSON report as artifact
+      # Upload report ALWAYS
       - name: Upload GitGuardian report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gitguardian-report
           path: ggshield-report.json
+
+      # Fail job if secrets were detected
+      - name: Fail pipeline if secrets found
+        if: steps.gg_scan.outcome == 'failure'
+        run: exit 1
