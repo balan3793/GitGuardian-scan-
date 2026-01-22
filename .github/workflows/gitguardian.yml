@@ -1,4 +1,4 @@
-name: GitGuardian Scan
+name: GitGuardian CI Secrets Scan (PoC)
 
 on:
   push:
@@ -7,8 +7,9 @@ on:
     branches: [ main ]
 
 jobs:
-  secrets-scan:
+  gitguardian-secrets-scan:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -16,30 +17,44 @@ jobs:
       - name: Install GitGuardian CLI
         run: python3 -m pip install ggshield --break-system-packages
 
-      # 1️⃣ Detection step (controls security gate)
-      - name: Run GitGuardian scan
+      # 🔍 Main CI scan (creates incident in GitGuardian)
+      - name: Run GitGuardian secrets scan
         id: gg_scan
         continue-on-error: true
         run: ggshield secret scan repo .
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # 2️⃣ JSON report (never fail)
-      - name: Generate JSON report
+      # 📄 JSON report (never fails)
+      - name: Generate GitGuardian JSON report
         if: always()
         run: ggshield secret scan repo . --json --exit-zero > ggshield-report.json
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # 3️⃣ Upload report
-      - name: Upload GitGuardian report
+      # 📦 Upload artifact
+      - name: Upload GitGuardian report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gitguardian-report
           path: ggshield-report.json
 
-      # 4️⃣ Enforce failure at the END
-      - name: Fail pipeline if secrets found
+      # 📝 CI Summary (PoC-friendly)
+      - name: Publish GitGuardian summary
+        if: always()
+        run: |
+          echo "## 🔐 GitGuardian Secrets Scan Result" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.gg_scan.outcome }}" = "failure" ]; then
+            echo "❌ **Secrets detected in this commit**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "👉 View incidents in GitGuardian dashboard:" >> $GITHUB_STEP_SUMMARY
+            echo "https://dashboard.gitguardian.com/workspace/825948/incidents" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **No secrets detected**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # 🚫 Enforce security gate
+      - name: Fail pipeline if secrets are found
         if: steps.gg_scan.outcome == 'failure'
         run: exit 1
