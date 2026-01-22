@@ -10,21 +10,25 @@ jobs:
   secrets-scan:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Step 2: Run GitGuardian scan using correct entryPoint
       - name: Run GitGuardian scan
         uses: GitGuardian/ggshield-action@v1
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         with:
-          args: secret scan repo .
+          entryPoint: scan repo .
 
-      - name: Run GitGuardian scan with JSON output
-        run: ggshield secret scan repo . --json > ggshield-report.json
+      # Step 3: Run ggshield manually to generate JSON report
+      - name: Generate JSON report
+        run: ggshield scan repo . --json > ggshield-report.json
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
+      # Step 4: Upload the JSON report as an artifact
       - name: Upload GitGuardian report
         uses: actions/upload-artifact@v4
         with:
