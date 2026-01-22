@@ -1,64 +1,59 @@
-name: Snyk SCA Scan
+name: GitGuardian CI Secrets Scan (PoC)
 
 on:
-  workflow_dispatch:   # Manual trigger
   push:
-    paths:
-      - 'vulcode/**'
+    branches: [ main ]
   pull_request:
-    paths:
-      - 'vulcode/**'
+    branches: [ main ]
 
 jobs:
-  snyk:
+  gitguardian-secrets-scan:
     runs-on: ubuntu-latest
+
     steps:
-      # 1️⃣ Checkout repo
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      # 2️⃣ Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"  # Adjust if needed
+      - name: Install GitGuardian CLI
+        run: python3 -m pip install ggshield --break-system-packages
 
-      # 3️⃣ Install vulnerable dependencies without conflicts
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --use-deprecated=legacy-resolver -r vulcode/requirements.txt
-
-      # 4️⃣ Run Snyk test
-      - name: Run Snyk SCA
-        uses: snyk/actions/python@master
+      # 🔍 Main CI scan (creates incident in GitGuardian)
+      - name: Run GitGuardian secrets scan
+        id: gg_scan
+        continue-on-error: true
+        run: ggshield secret scan repo .
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=vulcode/requirements.txt --package-manager=pip --skip-unresolved --json-file-output=report.json
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # 5️⃣ Monitor project in Snyk dashboard
-      - name: Monitor Snyk project
-        uses: snyk/actions/python@master
+      # 📄 JSON report (never fails)
+      - name: Generate GitGuardian JSON report
+        if: always()
+        run: ggshield secret scan repo . --json --exit-zero > ggshield-report.json
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: monitor
-          args: --file=vulcode/requirements.txt --package-manager=pip
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # 6️⃣ Upload JSON report as artifact
-      - name: Upload Snyk report
+      # 📦 Upload artifact
+      - name: Upload GitGuardian report artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snyk-sca-report
-          path: report.json
+          name: gitguardian-report
+          path: ggshield-report.json
 
-      # 7️⃣ Show summary of vulnerabilities
-      - name: Show Snyk results
+      # 📝 CI Summary (PoC-friendly)
+      - name: Publish GitGuardian summary
+        if: always()
         run: |
-          if [ -s report.json ]; then
-            cat report.json | jq '.vulnerabilities[] | {id, severity, title}'
+          echo "## 🔐 GitGuardian Secrets Scan Result" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.gg_scan.outcome }}" = "failure" ]; then
+            echo "❌ **Secrets detected in this commit**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "👉 View incidents in GitGuardian dashboard:" >> $GITHUB_STEP_SUMMARY
+            echo "https://dashboard.gitguardian.com/workspace/825948/incidents" >> $GITHUB_STEP_SUMMARY
           else
-            echo "No vulnerabilities found"
+            echo "✅ **No secrets detected**" >> $GITHUB_STEP_SUMMARY
           fi
+      # 🚫 Enforce security gate
+      - name: Fail pipeline if secrets are found
+        if: steps.gg_scan.outcome == 'failure'
+        run: exit 1
