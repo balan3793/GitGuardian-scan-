@@ -17,3 +17,10 @@ jobs:
         uses: GitGuardian/ggshield-action@v1
         with:
           api-key: ${{ secrets.GITGUARDIAN_API_KEY }}
+          args: scan repo --json > ggshield-report.json
+
+      - name: Upload GitGuardian report
+        uses: actions/upload-artifact@v3
+        with:
+          name: gitguardian-report
+          path: ggshield-report.json
