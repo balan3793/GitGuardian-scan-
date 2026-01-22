@@ -1,4 +1,4 @@
-name: GitGuardian Scan1
+name: GitGuardian Scan
 
 on:
   push:
@@ -14,21 +14,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Run GitGuardian scan using correct entryPoint
+      # Step 2: Install ggshield CLI
+      - name: Install GitGuardian CLI
+        run: pip install ggshield
+
+      # Step 3: Run GitGuardian scan (fails job if secrets found)
       - name: Run GitGuardian scan
-        uses: GitGuardian/ggshield-action@v1
+        run: ggshield secret scan repo .
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
-        with:
-          entryPoint: scan repo .
 
-      # Step 3: Run ggshield manually to generate JSON report
+      # Step 4: Generate JSON report
       - name: Generate JSON report
-        run: ggshield scan repo . --json > ggshield-report.json
+        run: ggshield secret scan repo . --json > ggshield-report.json
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # Step 4: Upload the JSON report as an artifact
+      # Step 5: Upload JSON report as artifact
       - name: Upload GitGuardian report
         uses: actions/upload-artifact@v4
         with:
