@@ -14,21 +14,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Run GitGuardian scan
+      # Step 2: Run GitGuardian scan (basic check, fails on secrets)
       - name: Run GitGuardian scan
         uses: GitGuardian/ggshield-action@v1
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         with:
-          args: secret scan repo .
+          args: scan repo .
 
-      # Step 3 (Optional): Save results as JSON report
+      # Step 3: Run GitGuardian scan with JSON output
       - name: Run GitGuardian scan with JSON output
         run: ggshield secret scan repo . --json > ggshield-report.json
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
-      # Step 4 (Optional): Upload report as artifact
+      # Step 4: Upload the JSON report as an artifact
       - name: Upload GitGuardian report
         uses: actions/upload-artifact@v4
         with:
