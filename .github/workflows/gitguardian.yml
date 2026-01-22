@@ -1,4 +1,4 @@
-name: GitGuardian Scan
+name: GitGuardian Scan1
 
 on:
   push:
