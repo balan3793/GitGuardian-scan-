@@ -1,4 +1,4 @@
-name: GitGuardian Scan1
+name: GitGuardian Scan
 
 on:
   push:
@@ -10,27 +10,12 @@ jobs:
   secrets-scan:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Run GitGuardian scan (basic check, fails on secrets)
       - name: Run GitGuardian scan
         uses: GitGuardian/ggshield-action@v1
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         with:
-          args: secret scan repo .
-
-      # Step 3: Run GitGuardian scan with JSON output
-      - name: Run GitGuardian scan with JSON output
-        run: ggshield secret scan repo . --json > ggshield-report.json
-        env:
-          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
-
-      # Step 4: Upload the JSON report as an artifact
-      - name: Upload GitGuardian report
-        uses: actions/upload-artifact@v4
-        with:
-          name: gitguardian-report
-          path: ggshield-report.json
+          args: scan repo .
