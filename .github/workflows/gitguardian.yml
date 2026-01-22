@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Run GitGuardian scan
         uses: GitGuardian/ggshield-action@v1
@@ -20,7 +20,7 @@ jobs:
           args: scan repo --json > ggshield-report.json
 
       - name: Upload GitGuardian report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gitguardian-report
           path: ggshield-report.json
